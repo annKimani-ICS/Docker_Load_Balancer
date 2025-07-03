@@ -43,3 +43,7 @@ class ConsistentHash:
             slot = (slot + 1) % self.total_slots
         
         return self.virtual_servers[slot]
+    
+    # Alias for compatibility with load balancer
+    def get_server_for_request(self, request_id):
+        return self.get_server(request_id)
