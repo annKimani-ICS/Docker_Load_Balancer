@@ -11,4 +11,4 @@ def home():
     return jsonify({"message": "Hello from Server_1", "status": "successful"}), 200
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001)  # Different port for each server
+    app.run(host="0.0.0.0", port=5001) 
