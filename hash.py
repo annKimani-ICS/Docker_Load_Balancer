@@ -12,16 +12,7 @@ class ConsistentHash:
             self._add_server(f"Server_{server_id}")
     
     def _add_server(self, server_name):
-        """
-        Add a server with its virtual copies to the hash ring
-        
-        Each server gets K=9 virtual copies placed at different slots
-        to ensure better load distribution
-        
-        Args:
-            server_name: Name of the server to add (e.g., "Server_1")
-        """
-        
+
         try:
             server_id = int(server_name.split('_')[1])
         except (IndexError, ValueError):
@@ -108,11 +99,8 @@ class ConsistentHash:
         return self.get_server(request_id)
     
     def get_server_distribution(self):
-        """
-        Get statistics about server distribution in the hash ring
-        
-        Returns:
-            Dictionary with server names as keys and virtual copy counts as values
+        """'''
+        Returns:Dictionary with server names as keys and virtual copy counts as values
         """
         distribution = {}
         for server in self.virtual_servers.values():

@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request
 import requests
 import random
 import logging
-from hash import ConsistentHash  # Your fixed ConsistentHash class
+from hash import ConsistentHash
 
 app = Flask(__name__)
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 # Server configuration
 HSLOTS = 512
 K = 9
-servers = ["Server_1:5000", "Server_2:5000", "Server_3:5000"]
+servers = ["Server_1:5001", "Server_2:5002", "Server_3:5003"]  # Updated ports
 hash_ring = ConsistentHash(num_servers=3, total_slots=HSLOTS)
 
 
@@ -27,6 +27,7 @@ def root():
                     "/rep": "GET - List replicas",
                     "/add": "POST - Add servers",
                     "/rm": "DELETE - Remove servers",
+                    "/servers": "GET - List all active servers with health status",
                     "/home": "GET - Route to servers",
                 },
             }
@@ -79,14 +80,22 @@ def add_servers():
                 400,
             )
 
-        # Generate server names
-        new_servers = (
-            hostnames[:n]
-            if hostnames
-            else [f"Server_{random.randint(100, 999)}:5000" for _ in range(n)]
-        )
+        # Generate server names with appropriate ports
+        new_servers = []
+        if hostnames:
+            new_servers = hostnames[:n]
+        else:
+            # Generate new servers with unique ports starting from 5010
+            base_port = 5010
+            existing_ports = [int(s.split(":")[1]) for s in servers]
+            for i in range(n):
+                while base_port in existing_ports:
+                    base_port += 1
+                new_servers.append(f"Server_{random.randint(100, 999)}:{base_port}")
+                existing_ports.append(base_port)
+                base_port += 1
 
-        # Add servers to both the servers list and hash ring
+        # Adds servers to both the servers list and hash ring
         for server in new_servers:
             server_name = server.split(":")[0]
             if server_name not in [s.split(":")[0] for s in servers]:
@@ -146,7 +155,7 @@ def remove_servers():
         # Determine which servers to remove
         remove_list = hostnames[:n] if hostnames else servers[:n]
 
-        # Remove servers from both the servers list and hash ring
+        # Removes servers from both the servers list and hash ring
         successfully_removed = []
         for server in remove_list:
             server_name = server.split(":")[0]
@@ -182,7 +191,8 @@ def remove_servers():
 def is_server_alive(server):
     """Check if a server is responding to health checks"""
     try:
-        url = f"http://localhost:{server.split(':')[1]}/heartbeat"
+        port = server.split(":")[1]
+        url = f"http://localhost:{port}/heartbeat"
         response = requests.get(url, timeout=2)
         return response.status_code == 200
     except (requests.RequestException, IndexError) as e:
@@ -257,26 +267,34 @@ def heartbeat():
 
 @app.route("/servers", methods=["GET"])
 def list_servers():
-    """List all active servers with detailed information"""
+    """List all active servers"""
     try:
         # Get distribution from hash ring
         distribution = hash_ring.get_server_distribution()
-        
-        return jsonify({
-            "message": {
-                "N": len(servers),
-                "replicas": servers,
-                "hash_ring_distribution": distribution,
-                "total_virtual_servers": sum(distribution.values()),
-                "status": "successful"
-            }
-        }), 200
+
+        # Check health of each server
+        server_health = {}
+        for server in servers:
+            server_health[server] = is_server_alive(server)
+
+        return (
+            jsonify(
+                {
+                    "message": {
+                        "N": len(servers),
+                        "replicas": servers,
+                        "server_health": server_health,
+                        "hash_ring_distribution": distribution,
+                        "total_virtual_servers": sum(distribution.values()),
+                        "status": "successful",
+                    }
+                }
+            ),
+            200,
+        )
     except Exception as e:
         logger.error(f"Error in list_servers: {str(e)}")
-        return jsonify({
-            "message": f"Error: {str(e)}",
-            "status": "failure"
-        }), 500
+        return jsonify({"message": f"Error: {str(e)}", "status": "failure"}), 500
 
 
 if __name__ == "__main__":
