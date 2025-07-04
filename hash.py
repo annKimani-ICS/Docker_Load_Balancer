@@ -2,13 +2,7 @@ import math
 
 class ConsistentHash:
     def __init__(self, num_servers=3, total_slots=512):
-        """
-        Initialize the consistent hash ring
-        
-        Args:
-            num_servers: Number of initial servers to add
-            total_slots: Total number of slots in the hash ring (default 512)
-        """
+
         self.total_slots = total_slots
         self.virtual_servers = {}  # Dictionary mapping {slot: server_name}
         
@@ -27,7 +21,7 @@ class ConsistentHash:
         Args:
             server_name: Name of the server to add (e.g., "Server_1")
         """
-        # Extract server ID from name (e.g., "Server_1" -> 1)
+        
         try:
             server_id = int(server_name.split('_')[1])
         except (IndexError, ValueError):
@@ -67,20 +61,7 @@ class ConsistentHash:
         return (request_id * request_id + 2 * request_id + 17) % self.total_slots
     
     def get_server(self, request_id):
-        """
-        Find which server should handle this request using consistent hashing
-        
-        Process:
-        1. Hash the request to get a slot number
-        2. Find the next server in clockwise direction from that slot
-        3. Return the server name
-        
-        Args:
-            request_id: Unique identifier for the request
-            
-        Returns:
-            Server name that should handle the request, or None if no servers available
-        """
+
         if not self.virtual_servers:
             return None
         
@@ -99,15 +80,7 @@ class ConsistentHash:
         return self.virtual_servers[slot]
     
     def remove_server(self, server_name):
-        """
-        Remove a server and all its virtual copies from the hash ring
-        
-        Args:
-            server_name: Name of the server to remove
-            
-        Returns:
-            True if server was removed, False if server wasn't found
-        """
+
         if not server_name:
             return False
         
@@ -146,10 +119,3 @@ class ConsistentHash:
             distribution[server] = distribution.get(server, 0) + 1
         return distribution
     
-    def print_ring_status(self):
-        """Print current status of the hash ring for debugging"""
-        print(f"Hash Ring Status:")
-        print(f"Total slots: {self.total_slots}")
-        print(f"Occupied slots: {len(self.virtual_servers)}")
-        print(f"Server distribution: {self.get_server_distribution()}")
-        print(f"Active servers: {set(self.virtual_servers.values())}")
