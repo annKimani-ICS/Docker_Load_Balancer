@@ -1,4 +1,5 @@
-  
+    The Load Balancer is defined as follows:
+    
         Hash function for virtual servers: Φ(i,j) = i² + j + 2j + 25
         This function determines where to place virtual server j of server i
         
